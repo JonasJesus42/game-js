@@ -6,10 +6,12 @@ kaboom({
     clearColor: [0, 0, 0, 1],
 })
 
+const ENEMY_SPEED = 20
 const MOVE_SPEED = 120
 const JUMP_FORCE = 360
 const BIG_JUMP_FORCE = 550
 let CURRENT_JUMP_FORCE = JUMP_FORCE
+let isJump = false
 
 loadRoot('./assets/')
 
@@ -26,7 +28,7 @@ loadSprite('pipe-top-right', 'pipe-top-right.png')
 loadSprite('pipe-bottom-left', 'pipe-bottom-left.png')
 loadSprite('pipe-bottom-right', 'pipe-bottom-right.png')
 
-scene("game", () => {
+scene("game", ({score}) => {
     layers(['bg', 'obj', 'ui'], 'obj')
     const map = [
         '                                         ', 
@@ -52,20 +54,20 @@ scene("game", () => {
         '-': [sprite('pipe-top-left'), solid(), scale(0.5)],
         ')': [sprite('pipe-bottom-right'), solid(), scale(0.5)],
         '(': [sprite('pipe-bottom-left'), solid(), scale(0.5)],
-        '^': [sprite('evil-shroom'), solid()],
+        '^': [sprite('evil-shroom'), solid(), "dangerous"],
         '}': [sprite('unboxed'), solid()],
         '#': [sprite('mushroom'), solid(), 'mushroom', body()],
     }
 
     const gameLevel = addLevel(map, levelCfg)
 
-    const scoreLabel = add([
-        text('teste'),
-        pos(30, 6),
-        layer('ui'),
+    const scoreLavel = add([
+        text(score),
+        pos(6, 6),
+        layer("ui"),
         {
-            value: 'teste',
-        }
+            value: score,
+        },
     ])
 
     add([text('level' + 'test', pos(4,6))])
@@ -130,12 +132,23 @@ scene("game", () => {
     })
     player.collides('coin', (c) => {
         destroy(c)
-        scoreLabel.value++
-        scoreLabel.text = scoreLabel.value
+        scoreLavel.value++
+        scoreLavel.text = scoreLavel.value
     })
-    player.collides('dangerous', (d) => {
-        go('losse', { score: scoreLabel.value})
+    
+    action("dangerous", (d) =>{
+
+        d.move(-ENEMY_SPEED, 0)
     })
+
+    player.collides("dangerous", (d) => {
+        if(isJump){
+            destroy(d)
+        }else{
+            go("lose", { score: scoreLavel.value, })
+        }
+        
+    });
 
 
 
@@ -146,15 +159,24 @@ scene("game", () => {
     keyDown('left', () =>{
         player.move(-MOVE_SPEED, 0)
     })
+    player.action(() => {
+        if (player.grounded()){
+            isJump = false
+        }
+    })
+
     keyPress("space", () => {
     	if (player.grounded()) {
             player.jump(CURRENT_JUMP_FORCE);
+            isJump = true
         }
     })
 }) 
 
 scene('lose', ({score}) => {
-    add([text(score, 23)])
+    add([text(score, 32),
+        origin('center'), 
+        pos(width()/2, height()/2)])
 })
 
-go("game")
+go("game", {score: 0})
