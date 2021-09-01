@@ -154,7 +154,7 @@ scene("game", () => {
 }) 
 
 scene('lose', ({score}) => {
-    add([text()])
+    add([text(score, 23)])
 })
 
 go("game")
