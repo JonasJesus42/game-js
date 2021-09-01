@@ -8,10 +8,11 @@ kaboom({
 
 const ENEMY_SPEED = 20
 const MOVE_SPEED = 120
-const JUMP_FORCE = 360
+const JUMP_FORCE = 400
 const BIG_JUMP_FORCE = 550
 let CURRENT_JUMP_FORCE = JUMP_FORCE
 let isJump = false
+const FAIL_DEATH = 400
 
 loadRoot('./assets/')
 
@@ -28,19 +29,51 @@ loadSprite('pipe-top-right', 'pipe-top-right.png')
 loadSprite('pipe-bottom-left', 'pipe-bottom-left.png')
 loadSprite('pipe-bottom-right', 'pipe-bottom-right.png')
 
-scene("game", ({score}) => {
+loadSprite('blue-block', 'blue-block.png')
+loadSprite('blue-brick', 'blue-brick.png')
+loadSprite('blue-steel', 'blue-steel.png')
+loadSprite('blue-evil-shroom', 'blue-evil-shroom.png')
+loadSprite('blue-surprise', 'blue-surpise.png')
+
+scene("game", ({level, score}) => {
     layers(['bg', 'obj', 'ui'], 'obj')
-    const map = [
-        '                                         ', 
-        '                                         ', 
-        '                                         ', 
-        '                                         ', 
-        '                                         ', 
-        '    %    =*=%=                           ', 
-        '                                         ', 
-        '                             -+          ', 
-        '                 ^    ^      ()          ',
-        '================================    =====',
+    const maps = [
+        [
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '    %    =*=%=                           ', 
+            '                                         ', 
+            '                             -+          ', 
+            '                 ^    ^      ()          ',
+            '================================    =====',
+        ],
+        [
+            '°                                         °', 
+            '°                                         °', 
+            '°                                         °', 
+            '°                                         °', 
+            '°                                         °', 
+            '°         @@@@@@             x            °', 
+            '°                           xx            °', 
+            '°                          xxx          -+°', 
+            '°                 z    z  xxxx          ()°',
+            '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+        ],
+        [
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '                                         ', 
+            '         =*=%=                           ', 
+            '                                         ', 
+            '                             -+          ', 
+            '                 ^    ^      ()          ',
+            '================================    =====',
+        ],
     ]
 
     const levelCfg = {
@@ -50,16 +83,21 @@ scene("game", ({score}) => {
         '$': [sprite('coin'), 'coin'],
         '%': [sprite('surprise'), solid(), 'coin-surprise'],
         '*': [sprite('surprise'), solid(), 'mushroom-surprise'],
-        '+': [sprite('pipe-top-right'), solid(), scale(0.5)],
-        '-': [sprite('pipe-top-left'), solid(), scale(0.5)],
+        '+': [sprite('pipe-top-right'), solid(), scale(0.5), 'pipe'],
+        '-': [sprite('pipe-top-left'), solid(), scale(0.5), 'pipe'],
         ')': [sprite('pipe-bottom-right'), solid(), scale(0.5)],
         '(': [sprite('pipe-bottom-left'), solid(), scale(0.5)],
         '^': [sprite('evil-shroom'), solid(), "dangerous"],
         '}': [sprite('unboxed'), solid()],
         '#': [sprite('mushroom'), solid(), 'mushroom', body()],
+        '!': [sprite('blue-block'), solid(), scale(0.5)],
+        '°': [sprite('blue-brick'), solid(), scale(0.5)],
+        'z': [sprite('blue-evil-shroom'), solid(), scale(0.5), "dangerous"],
+        '@': [sprite('blue-surprise'), solid(), scale(0.5), "coin-surprise"],
+        'x': [sprite('blue-steel'), solid(), scale(0.5)],
     }
 
-    const gameLevel = addLevel(map, levelCfg)
+    const gameLevel = addLevel(maps[level], levelCfg)
 
     const scoreLavel = add([
         text(score),
@@ -70,7 +108,7 @@ scene("game", ({score}) => {
         },
     ])
 
-    add([text('level' + 'test', pos(4,6))])
+    add([text('level' +  parseInt(level + 1)), pos(40,6)])
 
     function big(){
         let timer = 0
@@ -147,10 +185,23 @@ scene("game", ({score}) => {
         }else{
             go("lose", { score: scoreLavel.value, })
         }
-        
-    });
+    })
 
+    player.action(() => {
+        camPos(player.pos)
+        if(player.pos.y >= FAIL_DEATH){
+            go("lose", { score: scoreLavel.value, })
+        }
+    })
 
+    player.collides('pipe', () =>{
+        keyPress('down', () => {
+            go('game', {
+                level: (level + 1) % maps.length,
+                score: scoreLavel.value,
+            })
+        })
+    })
 
     keyDown('right', () =>{
         player.move(MOVE_SPEED, 0)
@@ -179,4 +230,4 @@ scene('lose', ({score}) => {
         pos(width()/2, height()/2)])
 })
 
-go("game", {score: 0})
+go("game", {level: 0, score: 0})
